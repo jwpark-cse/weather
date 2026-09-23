@@ -243,6 +243,7 @@ def parse_weather_code(code: int) -> str:
     }
     
     return weather_codes.get(code, '정보없음')
+<<<<<<< HEAD
 
 def extract_hourly_data(hourly_data: dict, target_hour: int, day_offset: int) -> dict:
     """
@@ -279,3 +280,5 @@ def extract_hourly_data(hourly_data: dict, target_hour: int, day_offset: int) ->
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     target_date = today_start + timedelta(days=day_offset)
     
+=======
+>>>>>>> 742a6bad7eda2e11341cfa7abea76935fbe140b2
