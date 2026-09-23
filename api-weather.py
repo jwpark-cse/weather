@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import json
 from typing import Optional
 
-
 # 한국 주요 도시 좌표
 KOREA_CITIES = {
     '서울': {'lat': 37.5665, 'lon': 126.9780},
@@ -128,3 +127,119 @@ KOREA_CITIES = {
     '화성': {'lat': 37.2029, 'lon': 126.8129},
 }
 
+
+def get_coordinates(location: str) -> dict:
+    """
+    지역명으로 좌표 찾기
+    
+    Args:
+        location: 지역명
+    
+    Returns:
+        {'lat': float, 'lon': float, 'name': str}
+    """
+    location = location.strip()
+    
+    # 알려진 도시인지 확인
+    if location in KOREA_CITIES:
+        coords = KOREA_CITIES[location]
+        return {'lat': coords['lat'], 'lon': coords['lon'], 'name': location}
+    
+    # 좌표 직접 입력 처리 (예: "37.5665,126.9780")
+    if ',' in location:
+        try:
+            parts = location.split(',')
+            lat = float(parts[0].strip())
+            lon = float(parts[1].strip())
+            return {'lat': lat, 'lon': lon, 'name': f"{lat:.2f}, {lon:.2f}"}
+        except:
+            pass
+    
+    # 기본값: 서울
+    print(f"⚠️  '{location}' 지역의 좌표를 찾을 수 없습니다. 서울 좌표를 사용합니다.")
+    return {'lat': 37.5665, 'lon': 126.9780, 'name': '서울'}
+
+
+def get_weather_data(lat: float, lon: float) -> Optional[dict]:
+    """
+    Open-Meteo API 에서 날씨 데이터 가져오기
+    
+    Args:
+        lat: 위도
+        lon: 경도
+    
+    Returns:
+        날씨 데이터 딕셔너리
+    """
+    base_url = "https://api.open-meteo.com/v1/forecast"
+    
+    # 파라미터 수동으로 구성 (인코딩 문제 방지)
+    params = (
+        f"latitude={lat}"
+        f"&longitude={lon}"
+        f"&hourly=temperature_2m,relativehumidity_2m,precipitation_probability,weathercode,windspeed_10m"
+        f"&daily=temperature_2m_max,temperature_2m_min,weathercode"
+        f"&timezone=Asia/Seoul"
+        f"&forecast_days=3"
+    )
+    
+    url = f"{base_url}?{params}"
+    
+    headers = {
+        'Accept': 'application/json',
+        'User-Agent': 'Python-Weather-App',
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: 날씨 정보를 가져오는데 실패했습니다: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Response: {e.response.text}")
+        return None
+
+
+def parse_weather_code(code: int) -> str:
+    """
+    WMO 날씨 코드를 한글로 변환
+    
+    Args:
+        code: WMO 날씨 코드
+    
+    Returns:
+        날씨 상태 문자열
+    """
+    weather_codes = {
+        0: '맑음',
+        1: '주로 맑음',
+        2: '구름많음',
+        3: '흐림',
+        45: '안개',
+        48: '안개 (서리)',
+        51: '이슬비 (약함)',
+        53: '이슬비 (보통)',
+        55: '이슬비 (강함)',
+        56: '얼어붙는 이슬비 (약함)',
+        57: '얼어붙는 이슬비 (강함)',
+        61: '비 (약함)',
+        63: '비 (보통)',
+        65: '비 (강함)',
+        66: '얼어붙는 비 (약함)',
+        67: '얼어붙는 비 (강함)',
+        71: '눈 (약함)',
+        73: '눈 (보통)',
+        75: '눈 (강함)',
+        77: '눈알',
+        80: '소나기 (약함)',
+        81: '소나기 (보통)',
+        82: '소나기 (강함)',
+        85: '눈소나기 (약함)',
+        86: '눈소나기 (강함)',
+        95: '뇌우',
+        96: '뇌우 + 우박',
+        99: '뇌우 + 강한 우박',
+    }
+    
+    return weather_codes.get(code, '정보없음')
