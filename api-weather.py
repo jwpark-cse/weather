@@ -511,3 +511,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# 최종 완성한 내용을 github에 올리고 push까지 진행.
