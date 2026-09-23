@@ -337,3 +337,144 @@ def extract_daily_data(daily_data: dict, day_offset: int) -> dict:
         result['max_temp'] = f"{round(max_temps[day_offset])} °C"
     
     return result
+
+
+def get_weather(location: str = "서울") -> dict:
+    """
+    날씨 정보 가져오기
+    
+    Args:
+        location: 지역명
+    
+    Returns:
+        날씨 정보 딕셔너리
+    """
+    # 좌표 찾기
+    coords = get_coordinates(location)
+    
+    print(f"📍 {coords['name']} (위도: {coords['lat']}, 경도: {coords['lon']}) 의 날씨 정보를 가져옵니다...")
+    
+    # API 호출
+    weather_data = get_weather_data(coords['lat'], coords['lon'])
+    
+    if not weather_data:
+        return {
+            'location': location,
+            'forecast': []
+        }
+    
+    # 데이터 파싱
+    hourly = weather_data.get('hourly', {})
+    daily = weather_data.get('daily', {})
+    
+    forecast = []
+    today = datetime.now()
+    
+    for day_offset in range(3):
+        date = today + timedelta(days=day_offset)
+        day_name = ['오늘', '내일', '모레'][day_offset]
+        
+        # 오전 6 시 데이터
+        morning_data = extract_hourly_data(hourly, 6, day_offset)
+        
+        # 오후 3 시 데이터
+        afternoon_data = extract_hourly_data(hourly, 15, day_offset)
+        
+        # 일일 데이터
+        daily_temp = extract_daily_data(daily, day_offset)
+        
+        day_info = {
+            'date': date.strftime("%m.%d."),
+            'day_name': day_name,
+            'morning': {
+                'time': '06:00',
+                'condition': morning_data['condition'],
+                'temp': morning_data['temp'],
+                'precip': morning_data['precip'],
+                'humidity': morning_data['humidity'],
+                'wind': morning_data['wind']
+            },
+            'afternoon': {
+                'time': '15:00',
+                'condition': afternoon_data['condition'],
+                'temp': afternoon_data['temp'],
+                'precip': afternoon_data['precip'],
+                'humidity': afternoon_data['humidity'],
+                'wind': afternoon_data['wind']
+            },
+            'min_temp': daily_temp['min_temp'],
+            'max_temp': daily_temp['max_temp']
+        }
+        
+        forecast.append(day_info)
+    
+    return {
+        'location': coords['name'],
+        'forecast': forecast
+    }
+
+
+def display_weather(weather_data: dict):
+    """
+    날씨 정보를 화면에 표시
+    """
+    if not weather_data or not weather_data.get('forecast'):
+        print("날씨 정보를 가져올 수 없습니다.")
+        return
+    
+    print("\n" + "="*70)
+    print(f"🌤️  {weather_data['location']} 날씨 예보 (오전 6 시 / 오후 3 시 기준)")
+    print("="*70 + "\n")
+    
+    for day in weather_data['forecast']:
+        print(f"📅 {day['day_name']} ({day['date']})")
+        print("-" * 60)
+        
+        # 오전 6 시
+        morning = day['morning']
+        print(f"  🌅 오전 {morning['time']}")
+        print(f"     날씨: {morning['condition']}")
+        print(f"     기온: {morning['temp']}")
+        print(f"     강수확률: {morning['precip']}")
+        if morning['humidity'] != 'N/A':
+            print(f"     습도: {morning['humidity']}")
+        if morning['wind'] != 'N/A':
+            print(f"     풍속: {morning['wind']}")
+        
+        print()
+        
+        # 오후 3 시
+        afternoon = day['afternoon']
+        print(f"  🌇 오후 {afternoon['time']}")
+        print(f"     날씨: {afternoon['condition']}")
+        print(f"     기온: {afternoon['temp']}")
+        print(f"     강수확률: {afternoon['precip']}")
+        if afternoon['humidity'] != 'N/A':
+            print(f"     습도: {afternoon['humidity']}")
+        if afternoon['wind'] != 'N/A':
+            print(f"     풍속: {afternoon['wind']}")
+        
+        print()
+        
+        # 최저/최고 기온
+        if day['min_temp'] != 'N/A' or day['max_temp'] != 'N/A':
+            print(f"  🌡️  일일 기온: 최저 {day['min_temp']} / 최고 {day['max_temp']}")
+        
+        print("\n" + "="*70 + "\n")
+
+
+def save_to_json(weather_data: dict, filename: str = None):
+    """
+    날씨 정보를 JSON 파일로 저장
+    """
+    if not filename:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"weather_{weather_data['location']}_{timestamp}.json"
+    
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(weather_data, f, ensure_ascii=False, indent=2)
+        print(f"✅ 날씨 정보가 '{filename}' 파일로 저장되었습니다.")
+    except Exception as e:
+        print(f"❌ 파일 저장 중 오류 발생: {e}")
+
