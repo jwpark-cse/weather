@@ -243,7 +243,6 @@ def parse_weather_code(code: int) -> str:
     }
     
     return weather_codes.get(code, '정보없음')
-<<<<<<< HEAD
 
 def extract_hourly_data(hourly_data: dict, target_hour: int, day_offset: int) -> dict:
     """
@@ -280,5 +279,61 @@ def extract_hourly_data(hourly_data: dict, target_hour: int, day_offset: int) ->
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     target_date = today_start + timedelta(days=day_offset)
     
-=======
->>>>>>> 742a6bad7eda2e11341cfa7abea76935fbe140b2
+    # API 가 반환하는 시간은 현지 시간 (Asia/Seoul) 이므로 직접 비교
+    for i, time_str in enumerate(times):
+        try:
+            # ISO 형식 파싱 (예: "2026-09-22T06:00")
+            data_time = datetime.fromisoformat(time_str)
+            
+            if (data_time.date() == target_date.date() and 
+                data_time.hour == target_hour):
+                
+                # 데이터 추출
+                if i < len(temps) and temps[i] is not None:
+                    result['temp'] = f"{round(temps[i])} °C"
+                
+                if i < len(precip) and precip[i] is not None:
+                    result['precip'] = f"{precip[i]}%"
+                
+                if i < len(humidity) and humidity[i] is not None:
+                    result['humidity'] = f"{humidity[i]}%"
+                
+                if i < len(weather) and weather[i] is not None:
+                    result['condition'] = parse_weather_code(weather[i])
+                
+                if i < len(wind) and wind[i] is not None:
+                    result['wind'] = f"{round(wind[i])} m/s"
+                
+                break
+        except Exception as e:
+            continue
+    
+    return result
+
+
+def extract_daily_data(daily_data: dict, day_offset: int) -> dict:
+    """
+    일일 데이터에서 최저/최고 기온 추출
+    
+    Args:
+        daily_data: Open-Meteo 의 daily 데이터
+        day_offset: 일 오프셋 (0=오늘, 1=내일, 2=모레)
+    
+    Returns:
+        {'min_temp': str, 'max_temp': str}
+    """
+    result = {'min_temp': 'N/A', 'max_temp': 'N/A'}
+    
+    if not daily_data:
+        return result
+    
+    min_temps = daily_data.get('temperature_2m_min', [])
+    max_temps = daily_data.get('temperature_2m_max', [])
+    
+    if day_offset < len(min_temps) and min_temps[day_offset] is not None:
+        result['min_temp'] = f"{round(min_temps[day_offset])} °C"
+    
+    if day_offset < len(max_temps) and max_temps[day_offset] is not None:
+        result['max_temp'] = f"{round(max_temps[day_offset])} °C"
+    
+    return result
