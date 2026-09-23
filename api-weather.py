@@ -478,3 +478,36 @@ def save_to_json(weather_data: dict, filename: str = None):
     except Exception as e:
         print(f"❌ 파일 저장 중 오류 발생: {e}")
 
+def main():
+    """
+    메인 함수
+    """
+    print("🌤️  날씨 예보 프로그램 (Open-Meteo API)")
+    print("-" * 50)
+    print("오전 6 시, 오후 3 시 기준으로 3 일간 날씨를 제공합니다.")
+    print("-" * 50)
+    
+    # 사용자에게 지역 입력 받기
+    location = input("\n날씨를 확인할 지역을 입력하세요 (기본값: 서울): ").strip()
+    
+    # 입력이 없으면 기본값 사용
+    if not location:
+        location = "서울"
+    
+    print()
+    
+    # 날씨 정보 가져오기
+    weather_data = get_weather(location)
+    
+    # 결과 표시
+    display_weather(weather_data)
+    
+    # JSON 저장 여부 확인
+    if weather_data and weather_data.get('forecast'):
+        save = input("\n날씨 정보를 JSON 파일로 저장하시겠습니까? (y/n): ").strip().lower()
+        if save == 'y':
+            save_to_json(weather_data)
+
+
+if __name__ == "__main__":
+    main()
