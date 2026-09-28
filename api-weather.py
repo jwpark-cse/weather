@@ -461,6 +461,7 @@ def display_weather(weather_data: dict):
             print(f"  🌡️  일일 기온: 최저 {day['min_temp']} / 최고 {day['max_temp']}")
         
         print("\n" + "="*70 + "\n")
+        print("test github push")
 
 
 def save_to_json(weather_data: dict, filename: str = None):
